@@ -1,9 +1,9 @@
 from fastapi import FastAPI
-from .api.v1.search import router
+from app.api.v1.search import router
 
 app = FastAPI(title="Search Service")
 
-app.include_router(router, prefix="/v1")
+app.include_router(router, prefix="/v1/search")
 
 
 @app.get("/")
