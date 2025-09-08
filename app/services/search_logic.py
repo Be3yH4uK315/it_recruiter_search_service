@@ -14,7 +14,15 @@ class SearchEngine:
         must_not_queries = []
 
         if filters.get("role"):
-            must_queries.append({"match": {"headline_role": {"query": filters["role"], "boost": 2.0}}})
+            must_queries.append({
+                "match": {
+                    "headline_role": {
+                        "query": filters["role"],
+                        "boost": 2.0,
+                        "fuzziness": "AUTO"
+                    }
+                }
+            })
 
         experience_range = {}
         if filters.get("experience_min"):

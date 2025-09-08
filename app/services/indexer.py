@@ -4,15 +4,49 @@ from app.core.config import ELASTICSEARCH_URL, CANDIDATE_API_URL
 
 CANDIDATE_INDEX = "candidates"
 
-CANDIDATE_MAPPING = {
-    "properties": {
-        "id": {"type": "keyword"},
-        "telegram_id": {"type": "long"},
-        "headline_role": {"type": "text", "analyzer": "standard"},
-        "experience_years": {"type": "float"},
-        "location": {"type": "keyword"},
-        "work_modes": {"type": "keyword"},
-        "skills": {"type": "keyword"},
+CANDIDATE_MAPPING_WITH_ANALYZER = {
+    "settings": {
+        "analysis": {
+            "filter": {
+                "english_stemmer_filter": {
+                    "type": "stemmer",
+                    "language": "english"
+                },
+                "synonym_filter": {
+                    "type": "synonym_graph",
+                    "synonyms": [
+                        "js, javascript",
+                        "c#, csharp",
+                        "dev, developer, development",
+                        "lead, manager, head"
+                    ]
+                }
+            },
+            "analyzer": {
+                "custom_text_analyzer": {
+                    "tokenizer": "standard",
+                    "filter": [
+                        "lowercase",
+                        "synonym_filter",
+                        "english_stemmer_filter"
+                    ]
+                }
+            }
+        }
+    },
+    "mappings": {
+        "properties": {
+            "id": {"type": "keyword"},
+            "telegram_id": {"type": "long"},
+            "headline_role": {
+                "type": "text",
+                "analyzer": "custom_text_analyzer"
+            },
+            "experience_years": {"type": "float"},
+            "location": {"type": "keyword"},
+            "work_modes": {"type": "keyword"},
+            "skills": {"type": "keyword"},
+        }
     }
 }
 
@@ -63,8 +97,11 @@ class Indexer:
             self.es_client.indices.delete(index=CANDIDATE_INDEX)
 
         print(f"Creating new index '{CANDIDATE_INDEX}' with mapping...")
-        self.es_client.indices.create(index=CANDIDATE_INDEX, mappings=CANDIDATE_MAPPING)
-
+        self.es_client.indices.create(
+            index=CANDIDATE_INDEX,
+            settings=CANDIDATE_MAPPING_WITH_ANALYZER["settings"],
+            mappings=CANDIDATE_MAPPING_WITH_ANALYZER["mappings"]
+        )
         candidates_data = await self._get_all_candidates()
         if not candidates_data:
             print("No candidates found to index.")
@@ -76,3 +113,7 @@ class Indexer:
         return {"status": "success", "indexed": success, "failed": failed}
 
 indexer = Indexer()
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(indexer.run_full_reindex())
