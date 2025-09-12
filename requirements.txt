@@ -1,3 +1,5 @@
+aio-pika==9.5.7
+aiormq==6.9.0
 annotated-types==0.7.0
 anyio==4.10.0
 certifi==2025.8.3
@@ -19,7 +21,10 @@ Jinja2==3.1.6
 markdown-it-py==4.0.0
 MarkupSafe==3.0.2
 mdurl==0.1.2
+multidict==6.6.4
 orjson==3.11.3
+pamqp==3.3.0
+propcache==0.3.2
 pydantic==2.11.7
 pydantic-extra-types==2.10.5
 pydantic-settings==2.10.1
@@ -46,3 +51,4 @@ uvicorn==0.35.0
 uvloop==0.21.0
 watchfiles==1.1.0
 websockets==15.0.1
+yarl==1.20.1

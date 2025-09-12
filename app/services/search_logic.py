@@ -40,11 +40,26 @@ class SearchEngine:
 
         if filters.get("must_skills"):
             for skill in filters["must_skills"]:
-                must_queries.append({"term": {"skills": skill.lower()}})
+                must_queries.append({
+                    "match": {
+                        "skills": {
+                            "query": skill,
+                            "fuzziness": "AUTO"
+                        }
+                    }
+                })
 
         if filters.get("nice_skills"):
             for skill in filters["nice_skills"]:
-                should_queries.append({"term": {"skills": {"value": skill.lower(), "boost": 1.5}}})
+                should_queries.append({
+                    "match": {
+                        "skills": {
+                            "query": skill,
+                            "fuzziness": "AUTO",
+                            "boost": 1.5
+                        }
+                    }
+                })
 
         if exclude_ids:
             must_not_queries.append({"ids": {"values": exclude_ids}})

@@ -45,7 +45,10 @@ CANDIDATE_MAPPING_WITH_ANALYZER = {
             "experience_years": {"type": "float"},
             "location": {"type": "keyword"},
             "work_modes": {"type": "keyword"},
-            "skills": {"type": "keyword"},
+            "skills": {
+                "type": "text",
+                "analyzer": "custom_text_analyzer"
+            },
         }
     }
 }
@@ -55,6 +58,20 @@ class Indexer:
     def __init__(self):
         self.es_client = Elasticsearch(ELASTICSEARCH_URL)
         self.candidate_api_url = CANDIDATE_API_URL
+
+    def _format_candidate_for_es(self, candidate: dict) -> dict:
+        skills_list = [skill["skill"].lower() for skill in candidate.get("skills", [])]
+        work_modes_list = candidate.get("work_modes", [])
+
+        return {
+            "id": candidate["id"],
+            "telegram_id": candidate["telegram_id"],
+            "headline_role": candidate.get("headline_role"),
+            "experience_years": candidate.get("experience_years"),
+            "location": candidate.get("location"),
+            "work_modes": work_modes_list,
+            "skills": skills_list,
+        }
 
     async def _get_all_candidates(self) -> list:
         async with httpx.AsyncClient(
@@ -73,22 +90,25 @@ class Indexer:
 
     def _create_es_actions(self, candidates: list):
         for candidate in candidates:
-            skills_list = [skill["skill"].lower() for skill in candidate.get("skills", [])]
-            work_modes_list = candidate.get("work_modes", [])
-
+            source_data = self._format_candidate_for_es(candidate)
             yield {
                 "_index": CANDIDATE_INDEX,
                 "_id": candidate["id"],
-                "_source": {
-                    "id": candidate["id"],
-                    "telegram_id": candidate["telegram_id"],
-                    "headline_role": candidate.get("headline_role"),
-                    "experience_years": candidate.get("experience_years"),
-                    "location": candidate.get("location"),
-                    "work_modes": work_modes_list,
-                    "skills": skills_list,
-                },
+                "_source": source_data,
             }
+
+    def index_document(self, candidate_data: dict):
+        doc_id = candidate_data["id"]
+        body = self._format_candidate_for_es(candidate_data)
+        self.es_client.index(index=CANDIDATE_INDEX, id=doc_id, document=body)
+        print(f"Indexed/Updated document with ID: {doc_id}")
+
+    def delete_document(self, candidate_id: str):
+        try:
+            self.es_client.delete(index=CANDIDATE_INDEX, id=candidate_id)
+            print(f"Deleted document with ID: {candidate_id}")
+        except Exception as e:
+            print(f"Could not delete document {candidate_id}: {e}")
 
     async def run_full_reindex(self):
         print("Starting full re-indexation process...")
