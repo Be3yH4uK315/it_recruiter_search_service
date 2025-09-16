@@ -17,7 +17,6 @@ async def shutdown_event():
 
 app.include_router(search_router, prefix="/v1/search")
 
-
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Search Service"}

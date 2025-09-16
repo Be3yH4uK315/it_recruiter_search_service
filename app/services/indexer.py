@@ -53,7 +53,6 @@ CANDIDATE_MAPPING_WITH_ANALYZER = {
     }
 }
 
-
 class Indexer:
     def __init__(self):
         self.es_client = Elasticsearch(ELASTICSEARCH_URL)

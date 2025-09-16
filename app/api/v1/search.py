@@ -5,7 +5,6 @@ from app.models.search import SearchFilters
 
 router = APIRouter()
 
-
 @router.post("/")
 def search_candidates_endpoint(filters: SearchFilters):
     results = search_engine.search_candidates(
@@ -13,7 +12,6 @@ def search_candidates_endpoint(filters: SearchFilters):
         exclude_ids=filters.exclude_ids
     )
     return {"results": results}
-
 
 @router.post("/index/rebuild")
 async def rebuild_index(background_tasks: BackgroundTasks):

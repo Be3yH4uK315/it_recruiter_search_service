@@ -1,5 +1,3 @@
-# app/services/consumer.py
-
 import asyncio
 import json
 import aio_pika
@@ -9,7 +7,7 @@ from app.core.config import (
 )
 from app.services.indexer import indexer
 
-
+# --- RABBITMQ ---
 class RabbitMQConsumer:
     def __init__(self):
         self.connection_string = f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASS}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/"
@@ -70,6 +68,5 @@ class RabbitMQConsumer:
         if self.connection:
             await self.connection.close()
         print("RabbitMQ connection closed.")
-
 
 consumer = RabbitMQConsumer()

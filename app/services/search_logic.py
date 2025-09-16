@@ -2,7 +2,7 @@ from elasticsearch import Elasticsearch
 from app.core.config import ELASTICSEARCH_URL
 from typing import List
 
-
+# --- SEARCH ---
 class SearchEngine:
     def __init__(self):
         self.es_client = Elasticsearch(ELASTICSEARCH_URL)
@@ -88,6 +88,5 @@ class SearchEngine:
         except Exception as e:
             print(f"Error during Elasticsearch search: {e}")
             return []
-
 
 search_engine = SearchEngine()
