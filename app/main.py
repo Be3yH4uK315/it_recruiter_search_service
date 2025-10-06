@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from app.api.v1.search import router as search_router
 from app.services.consumer import consumer
 

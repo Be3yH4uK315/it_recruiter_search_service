@@ -7,7 +7,6 @@ from app.core.config import (
 )
 from app.services.indexer import indexer
 
-# --- RABBITMQ ---
 class RabbitMQConsumer:
     def __init__(self):
         self.connection_string = f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASS}@{RABBITMQ_HOST}:{RABBITMQ_PORT}/"
@@ -32,10 +31,12 @@ class RabbitMQConsumer:
 
                 if routing_key in ["candidate.created", "candidate.updated"]:
                     indexer.index_document(data)
+                    indexer.upsert_vector(data)
                 elif routing_key == "candidate.deleted":
                     candidate_id = data.get("id")
                     if candidate_id:
                         indexer.delete_document(candidate_id)
+                        indexer.delete_vector(candidate_id)
                     else:
                         print("Error: 'id' not found in delete message")
 

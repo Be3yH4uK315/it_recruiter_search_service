@@ -1,16 +1,21 @@
-from fastapi import APIRouter, BackgroundTasks
-from app.services.search_logic import search_engine
+from fastapi import APIRouter, BackgroundTasks, Depends
+from app.ml_models import ML_MODELS
 from app.services.indexer import indexer
+from app.services.search_logic import SearchEngine
 from app.models.search import SearchFilters
 
 router = APIRouter()
 
+def get_search_engine() -> SearchEngine:
+    return ML_MODELS["search_engine"]
+
 @router.post("/")
-def search_candidates_endpoint(filters: SearchFilters):
-    results = search_engine.search_candidates(
-        filters=filters.model_dump(exclude_none=True),
-        exclude_ids=filters.exclude_ids
-    )
+def search_candidates_endpoint(
+    filters: SearchFilters,
+    engine: SearchEngine = Depends(get_search_engine)
+):
+    filters_dict = filters.model_dump(exclude_none=True)
+    results = engine.hybrid_search(filters=filters_dict)
     return {"results": results}
 
 @router.post("/index/rebuild")
