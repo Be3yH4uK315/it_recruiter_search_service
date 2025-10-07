@@ -1,12 +1,20 @@
-import os
+from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
 load_dotenv()
 
-ELASTICSEARCH_URL = os.getenv("ELASTICSEARCH_URL")
-CANDIDATE_API_URL = os.getenv("CANDIDATE_SERVICE_URL")
-RABBITMQ_HOST=os.getenv("RABBITMQ_HOST")
-RABBITMQ_PORT=os.getenv("RABBITMQ_PORT")
-RABBITMQ_USER=os.getenv("RABBITMQ_USER")
-RABBITMQ_PASS=os.getenv("RABBITMQ_PASS")
-CANDIDATE_EXCHANGE_NAME=os.getenv("CANDIDATE_EXCHANGE_NAME")
+class Settings(BaseSettings):
+    """Класс для управления конфигурацией приложения."""
+    ELASTICSEARCH_URL: str
+    CANDIDATE_API_URL: str
+    RABBITMQ_HOST: str
+    RABBITMQ_PORT: int = 5672
+    RABBITMQ_USER: str = "guest"
+    RABBITMQ_PASS: str = "guest"
+    CANDIDATE_EXCHANGE_NAME: str
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+settings = Settings()

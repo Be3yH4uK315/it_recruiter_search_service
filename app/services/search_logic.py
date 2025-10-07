@@ -1,22 +1,22 @@
-from elasticsearch import Elasticsearch
+import logging
+from elasticsearch import AsyncElasticsearch
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict, Any
 
-from app.core.config import ELASTICSEARCH_URL
+from app.core.config import settings
 from app.services.milvus_client import milvus_client
 
+logger = logging.getLogger(__name__)
+
 class SearchEngine:
-    def __init__(self):
-        self.es_client = Elasticsearch(ELASTICSEARCH_URL)
+    def __init__(self, model: SentenceTransformer):
+        self.es_client = AsyncElasticsearch(settings.ELASTICSEARCH_URL)
         self.es_index_name = "candidates"
         self.milvus_collection = milvus_client.create_collection_if_not_exists()
         self.milvus_collection.load()
+        self.model = model
 
-        print("Loading Sentence Transformer model for search...")
-        self.model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
-        print("Model loaded successfully.")
-
-    def _filter_candidates_with_elasticsearch(self, filters: dict) -> Dict[str, float]:
+    async def _filter_candidates_with_elasticsearch(self, filters: dict) -> Dict[str, float]:
         """
         Возвращает список ID кандидатов, подходящих под точные критерии.
         """
@@ -53,18 +53,18 @@ class SearchEngine:
 
 
         try:
-            response = self.es_client.search(
+            response = await self.es_client.search(
                 index=self.es_index_name,
                 query=es_query,
                 size=500,
                 _source=["id"]
             )
             candidate_scores = {hit["_source"]["id"]: hit["_score"] for hit in response["hits"]["hits"]}
-            print(f"Elasticsearch filtered {len(candidate_scores)} candidates.")
+            logger.info(f"Elasticsearch filtered {len(candidate_scores)} candidates.")
             return candidate_scores
         except Exception as e:
-            print(f"Error during Elasticsearch filtering: {e}")
-            return []
+            logger.error(f"Error during Elasticsearch filtering: {e}")
+            return {}
 
     def _rank_candidates_with_milvus(self, query_text: str, candidate_ids: List[str], top_k: int = 10) -> List[Dict[str, Any]]:
         """
@@ -77,7 +77,7 @@ class SearchEngine:
         
         id_filter_expression = f"candidate_id in {candidate_ids}".replace("'", '"')
 
-        print(f"Searching in Milvus among {len(candidate_ids)} candidates for query: '{query_text}'")
+        logger.info(f"Searching in Milvus among {len(candidate_ids)} candidates for query: '{query_text}'")
         search_params = {"metric_type": "IP", "params": {"nprobe": 10}}
         
         results = self.milvus_collection.search(
@@ -95,10 +95,10 @@ class SearchEngine:
                 "similarity": hit.distance
             })
         
-        print(f"Milvus returned {len(ranked_results)} ranked candidates.")
+        logger.info(f"Milvus returned {len(ranked_results)} ranked candidates.")
         return ranked_results
 
-    def hybrid_search(self, filters: dict) -> List[Dict[str, Any]]:
+    async def hybrid_search(self, filters: dict) -> List[Dict[str, Any]]:
         """
         Основной метод гибридного поиска.
         """
@@ -110,7 +110,7 @@ class SearchEngine:
 
         semantic_query_text = ", ".join(semantic_parts)
         
-        es_results = self._filter_candidates_with_elasticsearch(filters)
+        es_results = await self._filter_candidates_with_elasticsearch(filters)
         if not es_results:
             return []
 
